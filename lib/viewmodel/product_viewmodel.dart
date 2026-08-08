@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../core/services/api_service.dart';
 import '../model/product_model.dart';
@@ -26,6 +27,7 @@ class ProductViewModel extends GetxController {
 
   // Active search query
   final RxString searchQuery = ''.obs;
+  Timer? _searchDebounce;
 
   @override
   void onInit() {
@@ -33,7 +35,13 @@ class ProductViewModel extends GetxController {
     fetchProducts(isRefresh: true);
   }
 
-  /// Fetches products from DummyJSON with pagination support.
+  @override
+  void onClose() {
+    _searchDebounce?.cancel();
+    super.onClose();
+  }
+
+  /// Fetches products from DummyJSON with pagination support. Handles search query lists too.
   Future<void> fetchProducts({bool isRefresh = false}) async {
     // If already loading or loading more, do not trigger again
     if (isLoading.value || isLoadingMore.value) return;
@@ -51,12 +59,20 @@ class ProductViewModel extends GetxController {
     }
 
     try {
+      final isSearch = searchQuery.value.trim().isNotEmpty;
+      final path = isSearch ? '/products/search' : '/products';
+      
+      final queryParams = <String, dynamic>{
+        'limit': _limit,
+        'skip': _skip,
+      };
+      if (isSearch) {
+        queryParams['q'] = searchQuery.value.trim();
+      }
+
       final response = await _apiService.get(
-        '/products',
-        queryParameters: {
-          'limit': _limit,
-          'skip': _skip,
-        },
+        path,
+        queryParameters: queryParams,
       );
 
       final responseModel = ProductsResponseModel.fromJson(response.data as Map<String, dynamic>);
@@ -92,36 +108,15 @@ class ProductViewModel extends GetxController {
     }
   }
 
-  /// Searches products by a text query.
-  Future<void> searchProducts(String query) async {
+  /// Searches products by a text query with debouncing and paginated results.
+  void searchProducts(String query) {
     searchQuery.value = query;
-    if (query.trim().isEmpty) {
+    if (_searchDebounce?.isActive ?? false) {
+      _searchDebounce!.cancel();
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
       fetchProducts(isRefresh: true);
-      return;
-    }
-
-    isLoading.value = true;
-    errorMessage.value = '';
-    isEmpty.value = false;
-    hasMore.value = false; // Turn off pagination for searches
-    products.clear();
-
-    try {
-      final response = await _apiService.get(
-        '/products/search',
-        queryParameters: {
-          'q': query.trim(),
-        },
-      );
-
-      final responseModel = ProductsResponseModel.fromJson(response.data as Map<String, dynamic>);
-      products.value = responseModel.products;
-      isEmpty.value = products.isEmpty;
-    } catch (e) {
-      errorMessage.value = e.toString().replaceFirst('Exception: ', '');
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /// Fetches a single product's details.
@@ -132,7 +127,11 @@ class ProductViewModel extends GetxController {
 
     try {
       final response = await _apiService.get('/products/$id');
-      selectedProduct.value = ProductModel.fromJson(response.data as Map<String, dynamic>);
+      if (response.data == null) {
+        detailErrorMessage.value = 'Product not found';
+      } else {
+        selectedProduct.value = ProductModel.fromJson(response.data as Map<String, dynamic>);
+      }
     } catch (e) {
       detailErrorMessage.value = e.toString().replaceFirst('Exception: ', '');
     } finally {

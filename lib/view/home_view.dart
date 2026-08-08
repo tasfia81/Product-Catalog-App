@@ -40,14 +40,15 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final crossAxisCount = isLandscape ? 3 : 2;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Catalogify',
-          style: theme.textTheme.titleLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: 20.sp, 
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
@@ -94,66 +95,38 @@ class _HomeViewState extends State<HomeView> {
                 );
               }
 
+              final productsCount = _viewModel.products.length;
+              final hasMore = _viewModel.hasMore.value;
+
               return RefreshIndicator(
                 onRefresh: () => _viewModel.fetchProducts(isRefresh: true),
-                child: CustomScrollView(
+                child: ListView.builder(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      sliver: SliverGrid(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          childAspectRatio: 0.72,
-                          crossAxisSpacing: 12.w,
-                          mainAxisSpacing: 12.h,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final product = _viewModel.products[index];
-                            return ProductCard(
-                              product: product,
-                              onTap: () {
-                                Get.toNamed('/product/${product.id}');
-                              },
-                            );
-                          },
-                          childCount: _viewModel.products.length,
-                        ),
-                      ),
-                    ),
-                    
-                    // Loading footer for pagination
-                    if (_viewModel.isLoadingMore.value)
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(vertical: 24.h),
-                        sliver: SliverToBoxAdapter(
-                          child: Center(
-                            child: SizedBox(
-                              width: 24.w,
-                              height: 24.h,
-                              child: CircularProgressIndicator(strokeWidth: 2.5.w),
-                            ),
+                  itemCount: productsCount + (hasMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == productsCount) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
                           ),
                         ),
-                      )
-                    else if (!_viewModel.hasMore.value && _viewModel.products.isNotEmpty)
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(vertical: 24.h),
-                        sliver: SliverToBoxAdapter(
-                          child: Center(
-                            child: Text(
-                              'No more products to show',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                      );
+                    }
+
+                    final product = _viewModel.products[index];
+                    return ProductCard(
+                      product: product,
+                      onTap: () {
+                        // Navigate using GetX passing only product ID
+                        Get.toNamed('/product/${product.id}');
+                      },
+                    );
+                  },
                 ),
               );
             }),
