@@ -10,28 +10,28 @@ class ProductViewModel extends GetxController {
   ProductViewModel({ApiService? apiService})
     : _apiService = apiService ?? ApiService();
 
-  // Observable states for Product List
+  ///-------------------------------- Observable states for Product List --------------------------------
   final RxList<ProductModel> products = <ProductModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
   final RxBool isEmpty = false.obs;
 
-  // Pagination states
+  ///-------------------------------- Pagination states --------------------------------
   final int _limit = 20;
   int _skip = 0;
   final RxBool hasMore = true.obs;
   final RxBool isLoadingMore = false.obs;
 
-  // Observable states for Product Detail
+  ///-------------------------------- Observable states for Product Detail --------------------------------
   final Rxn<ProductModel> selectedProduct = Rxn<ProductModel>();
   final RxBool isLoadingDetail = false.obs;
   final RxString detailErrorMessage = ''.obs;
 
-  // Active search query
+  ///-------------------------------- Active search query --------------------------------
   final RxString searchQuery = ''.obs;
   Timer? _searchDebounce;
 
-  // Observable states for Product Filtering
+  ///-------------------------------- Observable states for Product Filtering --------------------------------
   final RxList<String> categories = <String>[].obs;
   final RxString selectedCategory = 'All'.obs;
   final RxnDouble minPrice = RxnDouble();
@@ -40,7 +40,7 @@ class ProductViewModel extends GetxController {
   final RxString selectedSort = 'Default'
       .obs; // Default, Price: Low to High, Price: High to Low, Rating: High to Low, Name: A to Z
 
-  // Final filtered list displayed in GridView
+  ///-------------------------------- Final filtered list displayed in GridView --------------------------------
   final RxList<ProductModel> filteredProducts = <ProductModel>[].obs;
 
   @override

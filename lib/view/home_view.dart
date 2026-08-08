@@ -114,7 +114,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       body: Column(
         children: [
-          // Search section
+          ///-------------------------------- Search section --------------------------------
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             child: Obx(
@@ -125,7 +125,7 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
 
-          // Products Grid
+          ///-------------------------------- Products Grid --------------------------------
           Expanded(
             child: Obx(() {
               if (_viewModel.isLoading.value && _viewModel.products.isEmpty) {

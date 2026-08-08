@@ -10,7 +10,7 @@ import 'viewmodel/product_viewmodel.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inject global services and viewmodels
+  ///========================= Inject global services and viewmodels =========================
   final apiService = ApiService();
   Get.put<ApiService>(apiService);
   Get.put<ProductViewModel>(ProductViewModel(apiService: apiService));
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
           darkTheme: darkTheme,
           themeMode: ThemeMode
               .system, // Automatically use dark/light depending on OS setting
-          // Routes settings
+          ///========================= Routes settings =========================
           initialRoute: AppRoutes.home,
           getPages: AppRoutes.pages,
         );

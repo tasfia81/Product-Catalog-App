@@ -64,7 +64,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
       ],
       elevation: const WidgetStatePropertyAll(0),
       backgroundColor: WidgetStatePropertyAll(
-        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        theme.colorScheme.surfaceContainerHighest,
       ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
