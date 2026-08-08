@@ -9,7 +9,7 @@ import 'viewmodel/product_viewmodel.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Inject global services and viewmodels
   final apiService = ApiService();
   Get.put<ApiService>(apiService);
@@ -31,12 +31,12 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           title: 'Catalogify',
           debugShowCheckedModeBanner: false,
-          
-          // Theme settings
+
+          ///========================= Theme settings =========================
           theme: lightTheme,
           darkTheme: darkTheme,
-          themeMode: ThemeMode.system, // Automatically use dark/light depending on OS setting
-
+          themeMode: ThemeMode
+              .system, // Automatically use dark/light depending on OS setting
           // Routes settings
           initialRoute: AppRoutes.home,
           getPages: AppRoutes.pages,

@@ -32,12 +32,14 @@ class ProductModel {
       description: json['description'] as String? ?? '',
       category: json['category'] as String? ?? '',
       price: (json['price'] as num? ?? 0.0).toDouble(),
-      discountPercentage: (json['discountPercentage'] as num? ?? 0.0).toDouble(),
+      discountPercentage: (json['discountPercentage'] as num? ?? 0.0)
+          .toDouble(),
       rating: (json['rating'] as num? ?? 0.0).toDouble(),
       stock: json['stock'] as int? ?? 0,
       brand: json['brand'] as String?,
       thumbnail: json['thumbnail'] as String? ?? '',
-      images: (json['images'] as List<dynamic>?)
+      images:
+          (json['images'] as List<dynamic>?)
               ?.map((item) => item.toString())
               .toList() ??
           [],
@@ -76,8 +78,11 @@ class ProductsResponseModel {
 
   factory ProductsResponseModel.fromJson(Map<String, dynamic> json) {
     return ProductsResponseModel(
-      products: (json['products'] as List<dynamic>?)
-              ?.map((item) => ProductModel.fromJson(item as Map<String, dynamic>))
+      products:
+          (json['products'] as List<dynamic>?)
+              ?.map(
+                (item) => ProductModel.fromJson(item as Map<String, dynamic>),
+              )
               .toList() ??
           [],
       total: json['total'] as int? ?? 0,

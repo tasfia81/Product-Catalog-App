@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:get/get.dart';
 import '../core/services/api_service.dart';
 import '../model/product_model.dart';
@@ -6,7 +7,8 @@ import '../model/product_model.dart';
 class ProductViewModel extends GetxController {
   final ApiService _apiService;
 
-  ProductViewModel({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  ProductViewModel({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
   // Observable states for Product List
   final RxList<ProductModel> products = <ProductModel>[].obs;
@@ -29,9 +31,22 @@ class ProductViewModel extends GetxController {
   final RxString searchQuery = ''.obs;
   Timer? _searchDebounce;
 
+  // Observable states for Product Filtering
+  final RxList<String> categories = <String>[].obs;
+  final RxString selectedCategory = 'All'.obs;
+  final RxnDouble minPrice = RxnDouble();
+  final RxnDouble maxPrice = RxnDouble();
+  final RxString minimumRating = 'All'.obs; // All, 4+, 3+, 2+
+  final RxString selectedSort = 'Default'
+      .obs; // Default, Price: Low to High, Price: High to Low, Rating: High to Low, Name: A to Z
+
+  // Final filtered list displayed in GridView
+  final RxList<ProductModel> filteredProducts = <ProductModel>[].obs;
+
   @override
   void onInit() {
     super.onInit();
+    fetchCategories();
     fetchProducts(isRefresh: true);
   }
 
@@ -39,6 +54,26 @@ class ProductViewModel extends GetxController {
   void onClose() {
     _searchDebounce?.cancel();
     super.onClose();
+  }
+
+  /// Fetches categories from DummyJSON category endpoint.
+  Future<void> fetchCategories() async {
+    try {
+      final list = await _apiService.fetchCategories();
+      categories.value = ['All', ...list];
+    } catch (_) {
+      // Fallback categories if API call fails
+      categories.value = [
+        'All',
+        'beauty',
+        'fragrances',
+        'furniture',
+        'groceries',
+        'home-decoration',
+        'laptops',
+        'smartphones',
+      ];
+    }
   }
 
   /// Fetches products from DummyJSON with pagination support. Handles search query lists too.
@@ -61,11 +96,8 @@ class ProductViewModel extends GetxController {
     try {
       final isSearch = searchQuery.value.trim().isNotEmpty;
       final path = isSearch ? '/products/search' : '/products';
-      
-      final queryParams = <String, dynamic>{
-        'limit': _limit,
-        'skip': _skip,
-      };
+
+      final queryParams = <String, dynamic>{'limit': _limit, 'skip': _skip};
       if (isSearch) {
         queryParams['q'] = searchQuery.value.trim();
       }
@@ -75,8 +107,9 @@ class ProductViewModel extends GetxController {
         queryParameters: queryParams,
       );
 
-      final responseModel = ProductsResponseModel.fromJson(response.data as Map<String, dynamic>);
-      
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final responseModel = ProductsResponseModel.fromJson(data);
+
       if (isRefresh) {
         products.value = responseModel.products;
         isEmpty.value = products.isEmpty;
@@ -88,9 +121,13 @@ class ProductViewModel extends GetxController {
       _skip += responseModel.products.length;
 
       // Check if we reached the end of the list
-      if (products.length >= responseModel.total || responseModel.products.isEmpty) {
+      if (products.length >= responseModel.total ||
+          responseModel.products.isEmpty) {
         hasMore.value = false;
       }
+
+      // Apply filters on the newly fetched products
+      filterProducts();
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
       if (isRefresh) {
@@ -106,6 +143,108 @@ class ProductViewModel extends GetxController {
       isLoading.value = false;
       isLoadingMore.value = false;
     }
+  }
+
+  /// Filters and sorts products client-side based on active filter state.
+  void filterProducts() {
+    var tempProducts = List<ProductModel>.from(products);
+
+    // Apply category filter
+    if (selectedCategory.value != 'All') {
+      tempProducts = tempProducts
+          .where(
+            (p) =>
+                p.category.toLowerCase() ==
+                selectedCategory.value.toLowerCase(),
+          )
+          .toList();
+    }
+
+    // Apply price filter
+    if (minPrice.value != null) {
+      tempProducts = tempProducts
+          .where((p) => p.price >= minPrice.value!)
+          .toList();
+    }
+    if (maxPrice.value != null) {
+      tempProducts = tempProducts
+          .where((p) => p.price <= maxPrice.value!)
+          .toList();
+    }
+
+    // Apply rating filter
+    if (minimumRating.value != 'All') {
+      double minRate = 0.0;
+      if (minimumRating.value == '4+') {
+        minRate = 4.0;
+      } else if (minimumRating.value == '3+') {
+        minRate = 3.0;
+      } else if (minimumRating.value == '2+') {
+        minRate = 2.0;
+      }
+      tempProducts = tempProducts.where((p) => p.rating >= minRate).toList();
+    }
+
+    // Apply sorting
+    if (selectedSort.value == 'Price: Low to High') {
+      tempProducts.sort((a, b) => a.price.compareTo(b.price));
+    } else if (selectedSort.value == 'Price: High to Low') {
+      tempProducts.sort((a, b) => b.price.compareTo(a.price));
+    } else if (selectedSort.value == 'Rating: High to Low') {
+      tempProducts.sort((a, b) => b.rating.compareTo(a.rating));
+    } else if (selectedSort.value == 'Name: A to Z') {
+      tempProducts.sort(
+        (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+      );
+    }
+
+    filteredProducts.value = tempProducts;
+  }
+
+  /// Sets category filter.
+  void setCategory(String category) {
+    selectedCategory.value = category;
+    filterProducts();
+  }
+
+  /// Sets price range filter.
+  void setPriceRange(double? min, double? max) {
+    minPrice.value = min;
+    maxPrice.value = max;
+    filterProducts();
+  }
+
+  /// Sets minimum rating filter.
+  void setMinimumRating(String rating) {
+    minimumRating.value = rating;
+    filterProducts();
+  }
+
+  /// Sets sorting option.
+  void setSortOption(String sort) {
+    selectedSort.value = sort;
+    filterProducts();
+  }
+
+  /// Resets all active filters to default values (does not clear search query).
+  void clearFilters() {
+    selectedCategory.value = 'All';
+    minPrice.value = null;
+    maxPrice.value = null;
+    minimumRating.value = 'All';
+    selectedSort.value = 'Default';
+    filterProducts();
+  }
+
+  /// Computes the number of active filters.
+  int get activeFiltersCount {
+    int count = 0;
+    if (selectedCategory.value != 'All') count++;
+    if (minPrice.value != null) count++;
+    if (maxPrice.value != null) count++;
+    if (minimumRating.value != 'All') count++;
+    if (selectedSort.value != 'Default') count++;
+    return count;
   }
 
   /// Searches products by a text query with debouncing and paginated results.
@@ -127,11 +266,8 @@ class ProductViewModel extends GetxController {
 
     try {
       final response = await _apiService.get('/products/$id');
-      if (response.data == null) {
-        detailErrorMessage.value = 'Product not found';
-      } else {
-        selectedProduct.value = ProductModel.fromJson(response.data as Map<String, dynamic>);
-      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      selectedProduct.value = ProductModel.fromJson(data);
     } catch (e) {
       detailErrorMessage.value = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -139,9 +275,10 @@ class ProductViewModel extends GetxController {
     }
   }
 
-  /// Clear active search and reload all products.
+  /// Clear active search, clear all filters, and reload all products.
   void clearSearch() {
     searchQuery.value = '';
+    clearFilters();
     fetchProducts(isRefresh: true);
   }
 }

@@ -1,103 +1,130 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 
 class ApiService {
-  late final Dio _dio;
+  final http.Client _client;
 
-  ApiService({Dio? dio}) {
-    _dio = dio ?? Dio(
-      BaseOptions(
-        baseUrl: ApiConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-  }
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   /// Sends a GET request and handles errors.
-  Future<Response> get(
+  Future<http.Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
+    Map<String, String>? headers,
   }) async {
     try {
-      final response = await _dio.get(
-        path,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
+      final uri = Uri.parse('${ApiConstants.baseUrl}$path').replace(
+        queryParameters: queryParameters?.map(
+          (key, value) => MapEntry(key, value.toString()),
+        ),
       );
-      return response;
-    } on DioException catch (e) {
-      throw _handleDioException(e);
+
+      final response = await _client
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...?headers,
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception(
+        'No internet connection. Please verify your connection status.',
+      );
     } catch (e) {
+      if (e is HttpException) {
+        throw Exception('HTTP error occurred: ${e.message}');
+      }
+      if (e is FormatException) {
+        throw Exception('Bad response format from server.');
+      }
+      if (e is Exception && e.toString().startsWith('Exception: ')) {
+        rethrow;
+      }
       throw Exception('An unexpected error occurred: $e');
     }
   }
 
   /// Sends a POST request and handles errors.
-  Future<Response> post(
+  Future<http.Response> post(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
+    Map<String, String>? headers,
   }) async {
     try {
-      final response = await _dio.post(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
+      final uri = Uri.parse('${ApiConstants.baseUrl}$path').replace(
+        queryParameters: queryParameters?.map(
+          (key, value) => MapEntry(key, value.toString()),
+        ),
       );
-      return response;
-    } on DioException catch (e) {
-      throw _handleDioException(e);
+
+      final response = await _client
+          .post(
+            uri,
+            body: data != null ? jsonEncode(data) : null,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...?headers,
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return _handleResponse(response);
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception(
+        'No internet connection. Please verify your connection status.',
+      );
     } catch (e) {
+      if (e is HttpException) {
+        throw Exception('HTTP error occurred: ${e.message}');
+      }
+      if (e is FormatException) {
+        throw Exception('Bad response format from server.');
+      }
+      if (e is Exception && e.toString().startsWith('Exception: ')) {
+        rethrow;
+      }
       throw Exception('An unexpected error occurred: $e');
     }
   }
 
-  /// Map DioException to a more descriptive user-friendly message.
-  Exception _handleDioException(DioException e) {
-    String errorMessage = 'Something went wrong';
-    
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-        errorMessage = 'Connection timeout. Please check your internet connection.';
-        break;
-      case DioExceptionType.sendTimeout:
-        errorMessage = 'Send timeout. Please try again.';
-        break;
-      case DioExceptionType.receiveTimeout:
-        errorMessage = 'Receive timeout. Please try again.';
-        break;
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final message = e.response?.data?['message'] ?? e.message;
-        errorMessage = 'Server error ($statusCode): $message';
-        break;
-      case DioExceptionType.cancel:
-        errorMessage = 'Request was cancelled.';
-        break;
-      case DioExceptionType.connectionError:
-        errorMessage = 'No internet connection. Please verify your connection status.';
-        break;
-      case DioExceptionType.badCertificate:
-        errorMessage = 'Security certificate validation failed.';
-        break;
-      case DioExceptionType.unknown:
-      default:
-        errorMessage = e.message ?? 'An unknown connection error occurred.';
-        break;
+  /// Fetches the list of product categories.
+  Future<List<String>> fetchCategories() async {
+    final response = await get('/products/category-list');
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map((item) => item.toString()).toList();
+  }
+
+  http.Response _handleResponse(http.Response response) {
+    final statusCode = response.statusCode;
+    if (statusCode >= 200 && statusCode < 300) {
+      return response;
+    } else {
+      String message = 'Server error';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded.containsKey('message')) {
+          message = decoded['message'].toString();
+        }
+      } catch (_) {}
+      throw Exception('Server error ($statusCode): $message');
     }
-    
-    return Exception(errorMessage);
   }
 }

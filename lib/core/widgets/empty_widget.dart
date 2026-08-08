@@ -9,7 +9,8 @@ class EmptyWidget extends StatelessWidget {
   const EmptyWidget({
     super.key,
     this.title = 'No Products Found',
-    this.message = 'Try adjusting your search query or filters to find what you are looking for.',
+    this.message =
+        'Try adjusting your search query or filters to find what you are looking for.',
     this.icon = Icons.search_off_rounded,
     this.onClearFilters,
   });
@@ -26,14 +27,12 @@ class EmptyWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                color: theme.colorScheme.secondaryContainer.withValues(
+                  alpha: 0.2,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 48,
-                color: theme.colorScheme.secondary,
-              ),
+              child: Icon(icon, size: 48, color: theme.colorScheme.secondary),
             ),
             const SizedBox(height: 24),
             Text(
@@ -59,7 +58,10 @@ class EmptyWidget extends StatelessWidget {
                 icon: const Icon(Icons.clear_all_rounded),
                 label: const Text('Clear All Filters'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

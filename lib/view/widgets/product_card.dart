@@ -7,11 +7,7 @@ class ProductCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback onTap;
 
-  const ProductCard({
-    super.key,
-    required this.product,
-    required this.onTap,
-  });
+  const ProductCard({super.key, required this.product, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +18,7 @@ class ProductCard extends StatelessWidget {
       elevation: 1,
       margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 16.w),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.r),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
@@ -55,7 +49,9 @@ class ProductCard extends StatelessWidget {
                         errorWidget: (context, url, error) => Icon(
                           Icons.broken_image_outlined,
                           size: 28.r,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ),
@@ -65,7 +61,10 @@ class ProductCard extends StatelessWidget {
                       top: 4.h,
                       left: 4.w,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 5.w,
+                          vertical: 1.5.h,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.error,
                           borderRadius: BorderRadius.circular(4.r),

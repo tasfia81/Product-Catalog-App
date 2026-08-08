@@ -45,7 +45,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         title: Text(
           'Product Details',
           style: theme.textTheme.titleLarge?.copyWith(
-            fontSize: 18.sp, 
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -93,13 +93,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   child: CachedNetworkImage(
                     imageUrl: _activeImageUrl ?? product.thumbnail,
                     fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
                     errorWidget: (context, url, error) => Icon(
                       Icons.broken_image_outlined,
                       size: 64.r,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                   ),
                 ),
@@ -124,7 +125,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             ),
                           ),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 4.h,
+                          ),
                           decoration: BoxDecoration(
                             color: product.stock > 10
                                 ? theme.colorScheme.primaryContainer
@@ -132,7 +136,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             borderRadius: BorderRadius.circular(8.r),
                           ),
                           child: Text(
-                            product.stock > 10 ? 'In Stock' : 'Low Stock (${product.stock})',
+                            product.stock > 10
+                                ? 'In Stock'
+                                : 'Low Stock (${product.stock})',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: product.stock > 10
                                   ? theme.colorScheme.onPrimaryContainer
@@ -185,7 +191,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     // Ratings & Category
                     Row(
                       children: [
-                        Icon(Icons.star_rounded, color: Colors.amber[700], size: 20.r),
+                        Icon(
+                          Icons.star_rounded,
+                          color: Colors.amber[700],
+                          size: 20.r,
+                        ),
                         SizedBox(width: 4.w),
                         Text(
                           product.rating.toString(),
@@ -196,14 +206,19 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         ),
                         SizedBox(width: 16.w),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 4.h,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8.r),
                           ),
                           child: Text(
                             product.category,
-                            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12.sp),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontSize: 12.sp,
+                            ),
                           ),
                         ),
                       ],
@@ -273,10 +288,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                     child: CachedNetworkImage(
                                       imageUrl: imageUrl,
                                       fit: BoxFit.contain,
-                                      placeholder: (context, url) => const Center(
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      ),
-                                      errorWidget: (context, url, error) => const Icon(Icons.broken_image),
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.broken_image),
                                     ),
                                   ),
                                 ),
