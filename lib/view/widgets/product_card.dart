@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../model/product_model.dart';
 
 class ProductCard extends StatelessWidget {
-  final Product product;
+  final ProductModel product;
   final VoidCallback onTap;
 
   const ProductCard({
@@ -14,149 +16,123 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    // Capitalize category helper
-    final categoryText = product.category.isNotEmpty
-        ? product.category[0].toUpperCase() + product.category.substring(1)
-        : '';
+    final discount = product.discountPercentage > 0;
 
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.4),
-          width: 1,
-        ),
-      ),
+      elevation: 1,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+      ),
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section with Category tag
-            Stack(
-              children: [
-                Container(
-                  height: 150,
-                  width: double.infinity,
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  child: Hero(
+            // Image area
+            Expanded(
+              flex: 3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
                     tag: 'product-image-${product.id}',
-                    child: Image.network(
-                      product.image,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
+                    child: CachedNetworkImage(
+                      imageUrl: product.thumbnail,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        child: Center(
                           child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            width: 24.w,
+                            height: 24.h,
+                            child: CircularProgressIndicator(strokeWidth: 2.w),
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(Icons.broken_image_outlined, size: 48),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      categoryText,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(Icons.broken_image_outlined, size: 32.r),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  if (discount)
+                    Positioned(
+                      top: 8.h,
+                      right: 8.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error,
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Text(
+                          '-${product.discountPercentage.toStringAsFixed(0)}%',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onError,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 9.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            
-            // Text Section
+            // Text details
             Expanded(
+              flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Title
                     Text(
                       product.title,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        height: 1.2,
+                        fontSize: 13.sp,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
-                    
-                    // Rating
                     Row(
                       children: [
                         Icon(
                           Icons.star_rounded,
-                          size: 16,
+                          size: 14.r,
                           color: Colors.amber[700],
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 2.w),
                         Text(
-                          product.rating.rate.toString(),
-                          style: theme.textTheme.labelMedium?.copyWith(
+                          product.rating.toString(),
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
+                            fontSize: 11.sp,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${product.rating.count})',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: 10,
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Text(
+                            product.brand ?? '',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11.sp,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    
-                    // Price
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '\$${product.price.toStringAsFixed(2)}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.08),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '\$${product.price.toStringAsFixed(2)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.sp,
+                      ),
                     ),
                   ],
                 ),

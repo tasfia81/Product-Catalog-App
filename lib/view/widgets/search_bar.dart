@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomSearchBar extends StatefulWidget {
   final String initialValue;
@@ -42,39 +43,32 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: BorderSide(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
+    return SearchBar(
+      controller: _controller,
+      hintText: widget.hintText,
+      onChanged: widget.onChanged,
+      leading: Icon(
+        Icons.search_rounded,
+        color: theme.colorScheme.primary,
+        size: 22.r,
       ),
-      child: TextField(
-        controller: _controller,
-        onChanged: widget.onChanged,
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          hintStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+      trailing: [
+        if (_controller.text.isNotEmpty)
+          IconButton(
+            icon: Icon(Icons.clear_rounded, size: 20.r),
+            onPressed: () {
+              _controller.clear();
+              widget.onChanged('');
+            },
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: theme.colorScheme.primary,
-          ),
-          suffixIcon: _controller.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear_rounded),
-                  onPressed: () {
-                    _controller.clear();
-                    widget.onChanged('');
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        style: theme.textTheme.bodyMedium,
+      ],
+      elevation: const WidgetStatePropertyAll(0),
+      backgroundColor: WidgetStatePropertyAll(theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      ),
+      textStyle: WidgetStatePropertyAll(
+        theme.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
       ),
     );
   }

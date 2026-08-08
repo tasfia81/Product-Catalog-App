@@ -18,7 +18,7 @@ class LoadingWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: CircularProgressIndicator(

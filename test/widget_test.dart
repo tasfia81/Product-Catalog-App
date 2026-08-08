@@ -1,30 +1,67 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:product_catalog_app/main.dart';
+import 'package:product_catalog_app/model/product_model.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('ProductModel Tests', () {
+    test('ProductModel.fromJson should parse valid JSON correctly', () {
+      final json = {
+        'id': 1,
+        'title': 'Test Product',
+        'description': 'A description',
+        'category': 'test',
+        'price': 9.99,
+        'discountPercentage': 1.5,
+        'rating': 4.5,
+        'stock': 10,
+        'brand': 'TestBrand',
+        'thumbnail': 'https://example.com/thumb.jpg',
+        'images': ['https://example.com/image1.jpg'],
+      };
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      final product = ProductModel.fromJson(json);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(product.id, 1);
+      expect(product.title, 'Test Product');
+      expect(product.description, 'A description');
+      expect(product.category, 'test');
+      expect(product.price, 9.99);
+      expect(product.discountPercentage, 1.5);
+      expect(product.rating, 4.5);
+      expect(product.stock, 10);
+      expect(product.brand, 'TestBrand');
+      expect(product.thumbnail, 'https://example.com/thumb.jpg');
+      expect(product.images, ['https://example.com/image1.jpg']);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('ProductsResponseModel.fromJson should parse valid list JSON correctly', () {
+      final json = {
+        'products': [
+          {
+            'id': 1,
+            'title': 'P1',
+            'description': 'D1',
+            'category': 'C1',
+            'price': 100,
+            'discountPercentage': 5,
+            'rating': 4.0,
+            'stock': 50,
+            'brand': 'B1',
+            'thumbnail': 'T1',
+            'images': ['I1'],
+          }
+        ],
+        'total': 1,
+        'skip': 0,
+        'limit': 10,
+      };
+
+      final response = ProductsResponseModel.fromJson(json);
+
+      expect(response.total, 1);
+      expect(response.skip, 0);
+      expect(response.limit, 10);
+      expect(response.products.length, 1);
+      expect(response.products.first.title, 'P1');
+    });
   });
 }

@@ -1,164 +1,148 @@
-import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../core/services/api_service.dart';
 import '../model/product_model.dart';
 
-enum SortOption {
-  none,
-  priceAsc,
-  priceDesc,
-  ratingDesc,
-}
-
-class ProductViewModel extends ChangeNotifier {
+class ProductViewModel extends GetxController {
   final ApiService _apiService;
 
   ProductViewModel({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
-  // State variables for Product list
-  List<Product> _allProducts = [];
-  List<Product> _filteredProducts = [];
-  List<String> _categories = [];
-  bool _isLoading = false;
-  String _errorMessage = '';
+  // Observable states for Product List
+  final RxList<ProductModel> products = <ProductModel>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxString errorMessage = ''.obs;
+  final RxBool isEmpty = false.obs;
 
-  // State variables for details
-  Product? _selectedProduct;
-  bool _isLoadingDetail = false;
-  String _detailErrorMessage = '';
+  // Pagination states
+  final int _limit = 20;
+  int _skip = 0;
+  final RxBool hasMore = true.obs;
+  final RxBool isLoadingMore = false.obs;
 
-  // Active filters and settings
-  String _selectedCategory = 'All';
-  String _searchQuery = '';
-  SortOption _currentSortOption = SortOption.none;
+  // Observable states for Product Detail
+  final Rxn<ProductModel> selectedProduct = Rxn<ProductModel>();
+  final RxBool isLoadingDetail = false.obs;
+  final RxString detailErrorMessage = ''.obs;
 
-  // Getters
-  List<Product> get products => _filteredProducts;
-  List<String> get categories => _categories;
-  bool get isLoading => _isLoading;
-  String get errorMessage => _errorMessage;
+  // Active search query
+  final RxString searchQuery = ''.obs;
 
-  Product? get selectedProduct => _selectedProduct;
-  bool get isLoadingDetail => _isLoadingDetail;
-  String get detailErrorMessage => _detailErrorMessage;
+  @override
+  void onInit() {
+    super.onInit();
+    fetchProducts(isRefresh: true);
+  }
 
-  String get selectedCategory => _selectedCategory;
-  String get searchQuery => _searchQuery;
-  SortOption get currentSortOption => _currentSortOption;
+  /// Fetches products from DummyJSON with pagination support.
+  Future<void> fetchProducts({bool isRefresh = false}) async {
+    // If already loading or loading more, do not trigger again
+    if (isLoading.value || isLoadingMore.value) return;
 
-  /// Loads products and categories from the ApiService.
-  Future<void> loadProducts() async {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners();
+    if (isRefresh) {
+      _skip = 0;
+      hasMore.value = true;
+      isLoading.value = true;
+      errorMessage.value = '';
+      isEmpty.value = false;
+      products.clear();
+    } else {
+      if (!hasMore.value) return;
+      isLoadingMore.value = true;
+    }
 
     try {
-      final productsData = await _apiService.fetchProducts();
-      _allProducts = productsData.map((json) => Product.fromJson(json)).toList();
+      final response = await _apiService.get(
+        '/products',
+        queryParameters: {
+          'limit': _limit,
+          'skip': _skip,
+        },
+      );
 
-      final categoriesData = await _apiService.fetchCategories();
-      _categories = ['All', ...categoriesData];
+      final responseModel = ProductsResponseModel.fromJson(response.data as Map<String, dynamic>);
+      
+      if (isRefresh) {
+        products.value = responseModel.products;
+        isEmpty.value = products.isEmpty;
+      } else {
+        products.addAll(responseModel.products);
+      }
 
-      _applyFilters();
+      // Update skip offset for next request
+      _skip += responseModel.products.length;
+
+      // Check if we reached the end of the list
+      if (products.length >= responseModel.total || responseModel.products.isEmpty) {
+        hasMore.value = false;
+      }
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final message = e.toString().replaceFirst('Exception: ', '');
+      if (isRefresh) {
+        errorMessage.value = message;
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load more products: $message',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      isLoading.value = false;
+      isLoadingMore.value = false;
     }
   }
 
-  /// Loads a single product detail from the ApiService.
-  Future<void> loadProductDetail(int id) async {
-    _isLoadingDetail = true;
-    _detailErrorMessage = '';
-    _selectedProduct = null;
-    notifyListeners();
+  /// Searches products by a text query.
+  Future<void> searchProducts(String query) async {
+    searchQuery.value = query;
+    if (query.trim().isEmpty) {
+      fetchProducts(isRefresh: true);
+      return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = '';
+    isEmpty.value = false;
+    hasMore.value = false; // Turn off pagination for searches
+    products.clear();
 
     try {
-      final productData = await _apiService.fetchProductById(id);
-      _selectedProduct = Product.fromJson(productData);
+      final response = await _apiService.get(
+        '/products/search',
+        queryParameters: {
+          'q': query.trim(),
+        },
+      );
+
+      final responseModel = ProductsResponseModel.fromJson(response.data as Map<String, dynamic>);
+      products.value = responseModel.products;
+      isEmpty.value = products.isEmpty;
     } catch (e) {
-      _detailErrorMessage = e.toString().replaceFirst('Exception: ', '');
+      errorMessage.value = e.toString().replaceFirst('Exception: ', '');
     } finally {
-      _isLoadingDetail = false;
-      notifyListeners();
+      isLoading.value = false;
     }
   }
 
-  /// Sets the selected product directly (for instant detail loading).
-  void selectProduct(Product product) {
-    _selectedProduct = product;
-    notifyListeners();
-  }
+  /// Fetches a single product's details.
+  Future<void> getProductDetails(int id) async {
+    isLoadingDetail.value = true;
+    detailErrorMessage.value = '';
+    selectedProduct.value = null;
 
-  /// Sets the category filter and applies filters.
-  void setCategory(String category) {
-    if (_selectedCategory == category) return;
-    _selectedCategory = category;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Sets the search query and applies filters.
-  void setSearchQuery(String query) {
-    _searchQuery = query;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Sets the sorting option and applies filters.
-  void setSortOption(SortOption option) {
-    if (_currentSortOption == option) return;
-    _currentSortOption = option;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Clears all active filters (search query, categories, sorting).
-  void clearFilters() {
-    _selectedCategory = 'All';
-    _searchQuery = '';
-    _currentSortOption = SortOption.none;
-    _applyFilters();
-    notifyListeners();
-  }
-
-  /// Internal helper to filter and sort the product list.
-  void _applyFilters() {
-    List<Product> results = List.from(_allProducts);
-
-    // Apply category filtering
-    if (_selectedCategory != 'All') {
-      results = results.where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+    try {
+      final response = await _apiService.get('/products/$id');
+      selectedProduct.value = ProductModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      detailErrorMessage.value = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      isLoadingDetail.value = false;
     }
+  }
 
-    // Apply search query filtering
-    if (_searchQuery.isNotEmpty) {
-      final lowercaseQuery = _searchQuery.toLowerCase();
-      results = results.where((p) {
-        return p.title.toLowerCase().contains(lowercaseQuery) ||
-               p.description.toLowerCase().contains(lowercaseQuery) ||
-               p.category.toLowerCase().contains(lowercaseQuery);
-      }).toList();
-    }
-
-    // Apply sorting
-    switch (_currentSortOption) {
-      case SortOption.priceAsc:
-        results.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case SortOption.priceDesc:
-        results.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case SortOption.ratingDesc:
-        results.sort((a, b) => b.rating.rate.compareTo(a.rating.rate));
-        break;
-      case SortOption.none:
-      default:
-        // Keep default order from API
-        break;
-    }
-
-    _filteredProducts = results;
+  /// Clear active search and reload all products.
+  void clearSearch() {
+    searchQuery.value = '';
+    fetchProducts(isRefresh: true);
   }
 }
